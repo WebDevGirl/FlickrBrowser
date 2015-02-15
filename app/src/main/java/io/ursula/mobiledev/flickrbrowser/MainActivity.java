@@ -1,30 +1,33 @@
 package io.ursula.mobiledev.flickrbrowser;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
-import android.view.LayoutInflater;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity {
+    private static final String LOG_TAG = "MainActivity";
+    private List<Photo> mPhotoLists = new ArrayList<Photo>();
+    private RecyclerView mRecycleView;
+    private FlickrRecyclerViewAdapter flickrRecyclerViewAdapter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment())
-                    .commit();
-        }
 
-        //GetRawData theRawData = new GetRawData("https://api.flickr.com/services/feeds/photos_public.gne?tags=android,lollipop&format=json&nojsoncallback=1");
-        GetFlickrJsonData jsonData = new GetFlickrJsonData("android, lollipop",true);
-        jsonData.execute();
+        mRecycleView = (RecyclerView) findViewById(R.id.recycler_view);
+        mRecycleView.setLayoutManager(new LinearLayoutManager(this));
+
+        ProcessPhotos processPhotos = new ProcessPhotos("Dr Pepper", true);
+        processPhotos.execute();
     }
 
 
@@ -50,19 +53,24 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-
-        public PlaceholderFragment() {
+    public class ProcessPhotos extends GetFlickrJsonData {
+        public ProcessPhotos(String searchCriteria, boolean matchAll) {
+            super(searchCriteria, matchAll);
         }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            return rootView;
+        public void execute() {
+            super.execute();
+            ProcessData processData = new ProcessData();
+            processData.execute();
+        }
+
+        public class ProcessData extends DownloadJsonData {
+            protected void onPostExecute(String webData) {
+                super.onPostExecute(webData);
+                flickrRecyclerViewAdapter = new FlickrRecyclerViewAdapter(MainActivity.this, getmPhotos());
+                mRecycleView.setAdapter(flickrRecyclerViewAdapter);
+            }
+
         }
     }
 }
